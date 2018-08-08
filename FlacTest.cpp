@@ -30,16 +30,21 @@ class FlacDecoder{
 
 int main(array<System::String ^> ^args)
 {
-
+	Seekpoint sp;
+	//sp.TargetSampleInFrame = 999911111111;
+	//sp.FrameHeaderOffset = 6667778899;
+	//sp.NumberOfSamples = 55689;
+	//std::cout<<sizeof(sp);
 	FlacDecoder FD;
 	void * Temp;
 	uint8_t * Temp8;
 	uint32_t TempData=0;
-
+	uint32_t fseek_offset =0;
 	char *fileName = "c:\\stereo.flac";
     FILE *FlacFile = fopen(fileName, "rb");
 	
 	FlacHeader * FHEADER = new FlacHeader;
+	FrameHeader FRAMEHEADER;
 
 	fread(FHEADER, FlacHeaderSize, 1, FlacFile);
     unsigned t=0;
@@ -48,8 +53,9 @@ int main(array<System::String ^> ^args)
 		(FHEADER->FlacId[2]==0x61)&&
 		(FHEADER->FlacId[3]==0x43))
 	{
+		
 		printf("eto flac ");
-
+		fseek_offset += FlacHeaderSize;
 		//READ STREAMINFO 
 		bool IsLastMetadataBlock= true;
 		IsLastMetadataBlock=FHEADER->MetadataBlockHeader[0]>>7;	//get last block flag
@@ -104,20 +110,36 @@ int main(array<System::String ^> ^args)
 		{
 			fread(MetadataBlockHeader, MetadataBlockHeaderSize, 1, FlacFile);
 			IsLastMetadataBlock=MetadataBlockHeader[0]>>7;
+			TempData = *(uint32_t *)MetadataBlockHeader;
+			TempData = _byteswap_ulong(TempData);
+			TempData &= 0x00ffffff;
 			switch (MetadataBlockHeader[0]&0x7f)		
 			{
-				case 3:{
+				case 3:{	//seektable
+						fread(&sp, 18, 1, FlacFile);
+						sp.NumberOfSamples = _byteswap_ushort(sp.NumberOfSamples);
 						printf("case 3");
 						break;
 				};	
+				case 4:{	//vorbis comment
+						fseek(FlacFile,TempData,SEEK_CUR);
+						break;
+				};
 				default:{
 					return 0;
 				}
 			}
 		};
+		
+		delete[] MetadataBlockHeader;
+		
+		//read frame
+		fread(&FRAMEHEADER, 9, 1, FlacFile);
+		if(FRAMEHEADER.SyncCodeAndStrategy==FrameSyncroCodeFixedBlock)
+		{
 
-
-		printf("eto flac ");
+		}
+		
 	}
 	
 	//unsigned u = reverseBits(FHEADER.MetadataBlockHeader);
@@ -130,5 +152,5 @@ int main(array<System::String ^> ^args)
 
 void ReadSeekpoinTable()
 {
-
+	
 }
