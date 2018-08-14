@@ -4,7 +4,7 @@
 #define FlacHeaderSize 42
 #define MetadataBlockHeaderSize 4
 #define MetadataBlockStreamInfoSize 34
-#define FrameSyncFixedBlock 0xfff8
+#define FrameSyncFixedBlock 0xf8ff	//bigendian 0xfff8
 
 typedef struct _MetadataBlockStreamInfo
 {
@@ -45,3 +45,20 @@ typedef struct _FrameFooter{
 //------------------------------------------------------------------------
 //1-bit last block flag | 7-bits block type | 24-bits length of metadata |
 //------------------------------------------------------------------------
+
+uint32_t FrameSampleRate[12] = {0,88200,176400,192000,8000,16000,22050,24000,32000,44100,48000,96000};
+uint16_t FrameBlockSize[16]={0,192,576,1152,2304,4608,0,0,256,512,1024,2048,4096,8192,16384,32768};
+uint8_t BitPerSample[7]={0,8,12,0,16,20,24};
+enum FSampleRate{
+	sr_88_2khz,
+	sr_176_4kHz,
+	sr_192kHz,
+	sr_8kHz,
+	sr_16kHz,
+	sr_22_05kHz,
+	sr_24kHz,
+	sr_32kHz,
+	sr_44_1kHz,
+	sr_48kHz,
+	sr_96kHz
+};

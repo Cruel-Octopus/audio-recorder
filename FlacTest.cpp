@@ -135,8 +135,16 @@ int main(array<System::String ^> ^args)
 		
 		//read frame
 		fread(&FRAMEHEADER, 9, 1, FlacFile);
-		if(FRAMEHEADER.SyncCodeAndStrategy==FrameSyncroCodeFixedBlock)
+		if(FRAMEHEADER.SyncCodeAndStrategy==FrameSyncFixedBlock)
 		{
+			char BlockSize = FRAMEHEADER.BlockSizeAndSampleRate >>4;
+			char FrameRate = FRAMEHEADER.BlockSizeAndSampleRate & 0x0f;
+			std::cout<<FrameSampleRate[FrameRate]<<std::endl;;
+			std::cout<<FrameBlockSize[BlockSize]<<std::endl;;
+
+			char Chanels = FRAMEHEADER.ChanelsAndSampleSize >>4;
+			char BitPerSample = FRAMEHEADER.ChanelsAndSampleSize & 0x0f;
+			BitPerSample = BitPerSample >> 1;
 
 		}
 		
