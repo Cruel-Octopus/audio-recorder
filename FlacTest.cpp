@@ -134,7 +134,7 @@ int main(array<System::String ^> ^args)
 		delete[] MetadataBlockHeader;
 		
 		//read frame
-		fread(&FRAMEHEADER, 9, 1, FlacFile);
+		fread(&FRAMEHEADER, 11, 1, FlacFile);
 		if(FRAMEHEADER.SyncCodeAndStrategy==FrameSyncFixedBlock)
 		{
 			char BlockSize = FRAMEHEADER.BlockSizeAndSampleRate >>4;
@@ -145,6 +145,8 @@ int main(array<System::String ^> ^args)
 			char Chanels = FRAMEHEADER.ChanelsAndSampleSize >>4;
 			char BitPerSample = FRAMEHEADER.ChanelsAndSampleSize & 0x0f;
 			BitPerSample = BitPerSample >> 1;
+			std::cout<<FrameBitPerSample[BitPerSample]<<std::endl;;
+			
 
 		}
 		

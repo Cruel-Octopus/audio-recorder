@@ -34,7 +34,7 @@ typedef struct _FrameHeader
 	uint16_t	SyncCodeAndStrategy;
 	uint8_t		BlockSizeAndSampleRate;
 	uint8_t		ChanelsAndSampleSize;
-	uint32_t	FrameNumber;
+	uint8_t		FrameNumber[6];
 	uint8_t		CRC8;
 } FrameHeader;
 typedef struct _FrameFooter{
@@ -48,7 +48,7 @@ typedef struct _FrameFooter{
 
 uint32_t FrameSampleRate[12] = {0,88200,176400,192000,8000,16000,22050,24000,32000,44100,48000,96000};
 uint16_t FrameBlockSize[16]={0,192,576,1152,2304,4608,0,0,256,512,1024,2048,4096,8192,16384,32768};
-uint8_t BitPerSample[7]={0,8,12,0,16,20,24};
+uint8_t FrameBitPerSample[7]={0,8,12,0,16,20,24};
 enum FSampleRate{
 	sr_88_2khz,
 	sr_176_4kHz,
