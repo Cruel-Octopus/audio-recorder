@@ -6,6 +6,7 @@
 #include <string.h> //for strncmp
 #include <cstdint>  //for uint_32
 #include <intrin.h>
+#include "CRC8.h"
 
 using namespace System;
 
@@ -27,6 +28,34 @@ class FlacDecoder{
 		StreamInfo SI;
 };
 
+uint8_t GetFrameNumber(uint8_t * n,FILE * File)
+{
+	uint8_t Bytes=0;
+
+	if(*n<0x7F){
+	Bytes=1;
+	}else
+		{
+			if(*n<0xDF){
+			Bytes=2;
+			}else{
+					if(*n<0xEF){
+					Bytes=3;
+					}else{
+							if(*n<0xF7){
+							Bytes=4;
+							}else{
+									if(*n<0xFB){
+									Bytes=5;
+									}else{
+											if(*n<0xFD){
+											Bytes=6;}
+									}}}}
+		}
+	n++;
+	fread(n, Bytes, 1, File);
+	return Bytes;
+}
 
 int main(array<System::String ^> ^args)
 {
@@ -134,7 +163,7 @@ int main(array<System::String ^> ^args)
 		delete[] MetadataBlockHeader;
 		
 		//read frame
-		fread(&FRAMEHEADER, 11, 1, FlacFile);
+		fread(&FRAMEHEADER, 5, 1, FlacFile);
 		if(FRAMEHEADER.SyncCodeAndStrategy==FrameSyncFixedBlock)
 		{
 			char BlockSize = FRAMEHEADER.BlockSizeAndSampleRate >>4;
@@ -147,7 +176,7 @@ int main(array<System::String ^> ^args)
 			BitPerSample = BitPerSample >> 1;
 			std::cout<<FrameBitPerSample[BitPerSample]<<std::endl;;
 			
-
+			CRC8((uint8_t*)&FRAMEHEADER,5+GetFrameNumber(&FRAMEHEADER.FrameNumber[0],FlacFile));
 		}
 		
 	}

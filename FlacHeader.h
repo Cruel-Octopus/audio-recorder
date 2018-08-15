@@ -6,6 +6,8 @@
 #define MetadataBlockStreamInfoSize 34
 #define FrameSyncFixedBlock 0xf8ff	//bigendian 0xfff8
 
+//uint8_t GetFrameNumber(uint8_t * n,FILE * File);
+
 typedef struct _MetadataBlockStreamInfo
 {
 	uint16_t	MinBlockSize;
