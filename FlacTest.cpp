@@ -176,7 +176,9 @@ int main(array<System::String ^> ^args)
 			BitPerSample = BitPerSample >> 1;
 			std::cout<<FrameBitPerSample[BitPerSample]<<std::endl;;
 			
-			CRC8((uint8_t*)&FRAMEHEADER,5+GetFrameNumber(&FRAMEHEADER.FrameNumber[0],FlacFile));
+			uint8_t a[5] ={0xFF, 0xF8, 0xCA, 0x18, 0x00}; 
+			int b =CRC8(a,5);
+			//CRC8((uint8_t*)&FRAMEHEADER,5+GetFrameNumber(&FRAMEHEADER.FrameNumber[0],FlacFile));
 		}
 		
 	}
