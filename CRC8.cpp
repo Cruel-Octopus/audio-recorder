@@ -18,7 +18,7 @@ uint8_t CRC8(uint8_t *Ptr, int len){
         return crc;
 }
 
-void init_crc8(){
+void InitCRC8(){
 	uint8_t j,crc;
 	uint16_t i;
 	//FILE *fp = fopen("CRCTable.txt","wb");

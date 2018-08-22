@@ -7,6 +7,7 @@
 #include <cstdint>  //for uint_32
 #include <intrin.h>
 #include "CRC8.h"
+#include "CRC16.h"
 
 using namespace System;
 
@@ -54,7 +55,7 @@ uint8_t GetFrameNumber(uint8_t * n,FILE * File)
 		}
 	n++;
 	fread(n, Bytes, 1, File);
-	return Bytes;
+	return Bytes-1;
 }
 
 int main(array<System::String ^> ^args)
@@ -69,11 +70,16 @@ int main(array<System::String ^> ^args)
 	uint8_t * Temp8;
 	uint32_t TempData=0;
 	uint32_t fseek_offset =0;
-	char *fileName = "c:\\stereo.flac";
+	char *fileName = "c:\\out_2ch_indep_1024.flac";
     FILE *FlacFile = fopen(fileName, "rb");
 	
 	FlacHeader * FHEADER = new FlacHeader;
 	FrameHeader FRAMEHEADER;
+	uint8_t  SubframeHeader;
+
+	uint8_t mask,uu = 2;
+	mask = (~1<<1);
+	uu  = uu ^ mask;
 
 	fread(FHEADER, FlacHeaderSize, 1, FlacFile);
     unsigned t=0;
@@ -154,6 +160,10 @@ int main(array<System::String ^> ^args)
 						fseek(FlacFile,TempData,SEEK_CUR);
 						break;
 				};
+				case 1:{    //padding
+						fseek(FlacFile,TempData,SEEK_CUR);
+						break;
+				};
 				default:{
 					return 0;
 				}
@@ -166,19 +176,78 @@ int main(array<System::String ^> ^args)
 		fread(&FRAMEHEADER, 5, 1, FlacFile);
 		if(FRAMEHEADER.SyncCodeAndStrategy==FrameSyncFixedBlock)
 		{
-			char BlockSize = FRAMEHEADER.BlockSizeAndSampleRate >>4;
+			uint16_t BlockSize = FRAMEHEADER.BlockSizeAndSampleRate >>4;
 			char FrameRate = FRAMEHEADER.BlockSizeAndSampleRate & 0x0f;
 			std::cout<<FrameSampleRate[FrameRate]<<std::endl;;
 			std::cout<<FrameBlockSize[BlockSize]<<std::endl;;
-
+			
+			BlockSize = FrameBlockSize[BlockSize];
+			
 			char Chanels = FRAMEHEADER.ChanelsAndSampleSize >>4;
 			char BitPerSample = FRAMEHEADER.ChanelsAndSampleSize & 0x0f;
 			BitPerSample = BitPerSample >> 1;
 			std::cout<<FrameBitPerSample[BitPerSample]<<std::endl;;
 			
-			uint8_t a[5] ={0xFF, 0xF8, 0xCA, 0x18, 0x00}; 
+			//InitCRC16();
+			uint8_t a[5] ={0xFF, 0xF8, 0x59, 0x18, 0x00}; 
 			int b =CRC8(a,5);
-			//CRC8((uint8_t*)&FRAMEHEADER,5+GetFrameNumber(&FRAMEHEADER.FrameNumber[0],FlacFile));
+			//uint16_t b =CRC16(a,5);
+			char qq = CRC8((uint8_t*)&FRAMEHEADER,5+GetFrameNumber(&FRAMEHEADER.FrameNumber[0],FlacFile));
+			//uint8_t * ttt = new uint8_t[3145];
+			//fseek(FlacFile,0x88,SEEK_SET);
+			//fread(ttt, 3145, 1, FlacFile);
+			//b =CRC16(ttt,3145);
+			
+			uint8_t PredictionOrder = 0;
+			
+			fread(&SubframeHeader, 1, 1, FlacFile); //read SubframeHeader
+			{
+				if((SubframeHeader & 0x81)==0x0) //check IsIt Subframe Header
+				{
+					SubframeHeader >>=1;
+					if((SubframeHeader & 0x8)==0x08) //check IsIt subframe = FIXED
+					{
+						PredictionOrder = SubframeHeader && 0x07;	//get fixed prediction order;
+					}
+
+					if((SubframeHeader & 0x20)==0x20) //check IsIt subframe = LPC
+					{
+						PredictionOrder = SubframeHeader && 0x1F;	//get LPC prediction order;
+						PredictionOrder -=1;
+					}
+				}else {exit;}
+			}
+
+			uint32_t WarmSamples[4] = {0,0,0,0};
+
+			for (uint8_t i=0; i<PredictionOrder;i++)
+			{
+				fread(&WarmSamples[i],2, 1, FlacFile); //for 16 bit
+			}
+
+			uint8_t Residual = 0;
+			uint8_t PartitionOrder = 0;
+			uint8_t RiceParameter = 0;
+			uint8_t SamplesInPartition = 0;
+			bool IsFirstPartition =1;
+
+			fread(&Residual,1, 1, FlacFile); // read residual byte
+			
+			if((Residual & 0xC0)==0x00) //residual coding method 00
+			{
+				PartitionOrder = Residual & 0x3C;
+				PartitionOrder >>=2;
+			}
+
+			if(IsFirstPartition==true)
+			{
+				//SamplesInPartition = (BlockSize / std::pow( 2, PartitionOrder )) -1;
+				PartitionOrder = 2 << PartitionOrder-1;
+				SamplesInPartition = (BlockSize / PartitionOrder) -1;
+			}else{
+					SamplesInPartition = (BlockSize / std::pow( 2, PartitionOrder ));
+				}
+			
 		}
 		
 	}
@@ -190,7 +259,26 @@ int main(array<System::String ^> ^args)
 	//u=FHEADER.MetadataBlockHeader<<8;
     return 0;
 }
+void RiceDecoding(uint8_t * BitStream,uint8_t shift,uint8_t RiceParameter,uint8_t length)
+{
+	*BitStream = *BitStream << shift;
+	uint8_t Data = 1;
+	uint8_t Quotient = 0;
+	uint8_t Remainder = 0;
+	uint8_t Count = 0;
 
+	for(uint8_t i =0; i<length;i++)
+	{
+		for(uint8_t j =0; j<8;j++)
+		{
+			if((*BitStream & 0x80) == 0x00)
+			{
+				Data <<=1;
+				Data  &= 1;
+			}
+		}
+	}
+}
 void ReadSeekpoinTable()
 {
 	
