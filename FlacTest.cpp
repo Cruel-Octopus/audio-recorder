@@ -28,7 +28,64 @@ class FlacDecoder{
 	public:
 		StreamInfo SI;
 };
+void RiceDecoding(uint8_t * BitStream,uint8_t shift,uint8_t RiceParameter,uint8_t length)
+{
+	*BitStream = *BitStream << shift;
+	int8_t Data = 0;
+	uint8_t Quotient = 0;
+	uint8_t Remainder = 0;
+	uint8_t Count = 0;
+	bool FirstPart = 1;
+	uint8_t TailCounter = 0;
 
+	for (uint8_t i =0;i<shift;i++){
+
+	}
+
+	for(uint8_t i =0; i<length;i++)
+	{
+		for(uint8_t j =0; j<8;j++)
+		{
+			if(FirstPart)
+			{
+				if((*BitStream & 0x80) == 0x00)
+				{
+					Data <<=1;
+					Data = Data ^ (1<<0);
+					*BitStream <<=1;
+				}else{
+					*BitStream <<=1;
+					FirstPart = false;
+					TailCounter = 4;
+					}
+			}else
+				{
+					if((*BitStream & 0x80) == 0x80)
+					{
+						Data <<=1;
+						Data = Data ^ (1<<0);
+						*BitStream <<=1;
+					}else{
+						Data <<=1;
+						*BitStream <<=1;
+						}
+					TailCounter--;
+					if(TailCounter==0)
+					{
+						FirstPart = true;
+
+						if((Data & 0x01)==0x00)
+						{
+							Data>>=1;
+						}else{
+								Data>>=1;
+								Data = 0xff - Data; 
+							}
+					}
+				}
+		}
+	}
+}
 uint8_t GetFrameNumber(uint8_t * n,FILE * File)
 {
 	uint8_t Bytes=0;
@@ -76,10 +133,6 @@ int main(array<System::String ^> ^args)
 	FlacHeader * FHEADER = new FlacHeader;
 	FrameHeader FRAMEHEADER;
 	uint8_t  SubframeHeader;
-
-	uint8_t mask,uu = 2;
-	mask = (~1<<1);
-	uu  = uu ^ mask;
 
 	fread(FHEADER, FlacHeaderSize, 1, FlacFile);
     unsigned t=0;
@@ -248,6 +301,8 @@ int main(array<System::String ^> ^args)
 					SamplesInPartition = (BlockSize / std::pow( 2, PartitionOrder ));
 				}
 			
+			RiceDecoding(&Residual,0,RiceParameter,1);
+			
 		}
 		
 	}
@@ -259,26 +314,7 @@ int main(array<System::String ^> ^args)
 	//u=FHEADER.MetadataBlockHeader<<8;
     return 0;
 }
-void RiceDecoding(uint8_t * BitStream,uint8_t shift,uint8_t RiceParameter,uint8_t length)
-{
-	*BitStream = *BitStream << shift;
-	uint8_t Data = 1;
-	uint8_t Quotient = 0;
-	uint8_t Remainder = 0;
-	uint8_t Count = 0;
 
-	for(uint8_t i =0; i<length;i++)
-	{
-		for(uint8_t j =0; j<8;j++)
-		{
-			if((*BitStream & 0x80) == 0x00)
-			{
-				Data <<=1;
-				Data  &= 1;
-			}
-		}
-	}
-}
 void ReadSeekpoinTable()
 {
 	
